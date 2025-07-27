@@ -3,6 +3,7 @@
 *.so
 *.o
 *.a
+*.dll
 
 manual/manual.html
 
