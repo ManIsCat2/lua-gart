@@ -1490,9 +1490,40 @@ static void exprstat (LexState *ls) {
   FuncState *fs = ls->fs;
   struct LHS_assign v;
   suffixedexp(ls, &v.v);
-  if (ls->t.token == '=' || ls->t.token == ',') { /* stat -> assignment ? */
+  if (ls->t.token == '=' || ls->t.token == ',' || ls->t.token > TK_STRING) { /* stat -> assignment ? */
     v.prev = NULL;
-    assignment(ls, &v, 1);
+    if (ls->t.token > TK_STRING) {
+      int token = ls->t.token;  // save before next
+      expdesc orig = v.v;
+      int line = ls->linenumber;
+
+      luaX_next(ls);  // consume token
+      expdesc rhs;
+      expr(ls, &rhs);
+
+      BinOpr opr = OPR_NOBINOPR;
+      switch (token) {
+        case TK_PLUSEQ:  opr = OPR_ADD; break;
+        case TK_MINUSEQ: opr = OPR_SUB; break;
+        case TK_MULEQ:   opr = OPR_MUL; break;
+        case TK_DIVEQ:   opr = OPR_DIV; break;
+        case TK_IDIVEQ:  opr = OPR_IDIV; break;
+        case TK_OREQ:    opr = OPR_BOR; break;
+        case TK_ANDEQ:   opr = OPR_BAND; break;
+        case TK_MODEQ:   opr = OPR_MOD; break;
+        case TK_SHLEQ:   opr = OPR_SHL; break;
+        case TK_SHREQ:   opr = OPR_SHR; break;
+        default:         opr = OPR_NOBINOPR; break;
+      }
+
+      luaK_exp2anyreg(fs, &orig);
+      luaK_infix(fs, opr, &orig);
+      luaK_posfix(fs, opr, &orig, &rhs, line);
+
+      luaK_storevar(fs, &v.v, &orig);  // store result
+    } else {
+      assignment(ls, &v, 1);
+    }
   }
   else {  /* stat -> func */
     check_condition(ls, v.v.k == VCALL, "syntax error");

@@ -33,7 +33,9 @@ enum RESERVED {
   TK_IDIV, TK_CONCAT, TK_DOTS, TK_EQ, TK_GE, TK_LE, TK_NE,
   TK_SHL, TK_SHR,
   TK_DBCOLON, TK_EOS,
-  TK_FLT, TK_INT, TK_NAME, TK_STRING
+  TK_FLT, TK_INT, TK_NAME, TK_STRING,
+  TK_PLUSEQ, TK_MINUSEQ, TK_MULEQ, TK_DIVEQ, TK_IDIVEQ, TK_OREQ,
+  TK_ANDEQ, TK_MODEQ, TK_SHLEQ, TK_SHREQ
 };
 
 /* number of reserved words */
@@ -71,6 +73,13 @@ typedef struct LexState {
   TString *envn;  /* environment variable name */
 } LexState;
 
+#define luaX_symeq(opchar, tokenkind) \
+  next(ls); \
+  if (ls->current == '=') { \
+    next(ls); \
+    return tokenkind; \
+  } \
+  return opchar;
 
 LUAI_FUNC void luaX_init (lua_State *L);
 LUAI_FUNC void luaX_setinput (lua_State *L, LexState *ls, ZIO *z,
