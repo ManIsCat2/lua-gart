@@ -1490,7 +1490,7 @@ static void exprstat (LexState *ls) {
   FuncState *fs = ls->fs;
   struct LHS_assign v;
   suffixedexp(ls, &v.v);
-  if (ls->t.token == '=' || ls->t.token == ',' || ls->t.token > TK_STRING) { /* stat -> assignment ? */
+  if (ls->t.token == '=' || ls->t.token == ',' || (ls->t.token > TK_STRING && ls->t.token <= TK_SHREQ)) { /* stat -> assignment ? */
     v.prev = NULL;
     if (ls->t.token > TK_STRING) {
       int token = ls->t.token;  // save before next
@@ -1503,8 +1503,8 @@ static void exprstat (LexState *ls) {
 
       BinOpr opr = OPR_NOBINOPR;
       switch (token) {
-        case TK_PLUSEQ:  opr = OPR_ADD; break;
-        case TK_MINUSEQ: opr = OPR_SUB; break;
+        case TK_ADDEQ:   opr = OPR_ADD; break;
+        case TK_SUBEQ:   opr = OPR_SUB; break;
         case TK_MULEQ:   opr = OPR_MUL; break;
         case TK_DIVEQ:   opr = OPR_DIV; break;
         case TK_IDIVEQ:  opr = OPR_IDIV; break;

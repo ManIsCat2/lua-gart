@@ -442,14 +442,14 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       case '&': luaX_symeq('&', TK_ANDEQ);
       case '|': luaX_symeq('|', TK_OREQ);
-      case '+': luaX_symeq('+', TK_PLUSEQ);
+      case '+': luaX_symeq('+', TK_ADDEQ);
       case '*': luaX_symeq('*', TK_MULEQ);
       case '%': luaX_symeq('%', TK_MODEQ);
       case '-': {  /* '-' or '--' (comment) */
         next(ls);
         if (ls->current == '=') {
           next(ls);
-          return TK_MINUSEQ;
+          return TK_SUBEQ;
         }
         if (ls->current != '-') return '-';
         /* else is a comment */
