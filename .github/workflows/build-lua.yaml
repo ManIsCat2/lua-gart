@@ -1,0 +1,160 @@
+name: Build Lua
+
+on:
+    workflow_dispatch:
+    push:
+
+jobs:
+    build-android:
+        strategy:
+          matrix:
+            arch:
+              - name: x86-64
+                runner: ubuntu-24.04
+                image: termux/termux-docker:x86_64
+              - name: AArch64
+                runner: ubuntu-24.04-arm
+                image: termux/termux-docker:aarch64
+
+        name: Android ${{ matrix.arch.name }}
+        runs-on: ${{ matrix.arch.runner }}
+        container:
+          image: ${{ matrix.arch.image }}
+          volumes:
+            - /tmp/node20:/__e/node20
+        env:
+          ANDROID_ROOT: /system
+          ANDROID_DATA: /data
+          PREFIX: /data/data/com.termux/files/usr
+          HOME: /data/data/com.termux/files/home
+          PATH: /data/data/com.termux/files/usr/bin
+          TMPDIR: /data/data/com.termux/files/usr/tmp
+          LANG: en_US.UTF-8
+          TZ: UTC
+
+        steps:
+            - name: Install dependencies
+              run: |
+                ln -sf ${PREFIX}/etc/termux/mirrors/default ${PREFIX}/etc/termux/chosen_mirrors
+                /entrypoint.sh bash -c "yes | pkg upgrade -y"
+                chmod -R o+x ${PREFIX}/bin
+                /entrypoint.sh pkg install -y nodejs-lts
+                ln -sf ${PREFIX}/bin /__e/node20/bin
+                /entrypoint.sh pkg install -y make clang binutils
+
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Reset permissions
+              run: chown -R 1000:1000 .
+
+            - name: Build library
+              run: |
+                /entrypoint.sh make linux -j8
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-android-${{ matrix.arch.name }}
+                path: ./liblua.a
+
+    build-linux:
+        strategy:
+          matrix:
+            arch:
+              - name: x86_64
+                runner: ubuntu-24.04
+                cc: "'gcc -std=gnu99'"
+              - name: ARM
+                runner: ubuntu-24.04-arm
+                cc: arm-linux-gnueabihf-gcc
+              - name: ARM64
+                runner: ubuntu-24.04-arm
+                cc: aarch64-linux-gnu-gcc
+        runs-on: ${{ matrix.arch.runner }}
+        name: Linux ${{ matrix.arch.name }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install dependencies
+              run: |
+                sudo apt update
+                sudo apt install -y build-essential libreadline-dev gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
+                if [ "${{ matrix.arch.name }}" == "arm" ]; then
+                    sudo dpkg --add-architecture armhf
+                    sudo apt update
+                    sudo apt install -y libreadline-dev:armhf
+                fi
+
+            - name: Build library
+              run: make linux CC=${{ matrix.arch.cc }}
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-linux-${{ matrix.arch.name }}
+                path: ./liblua.a
+    
+    build-windows:
+        strategy:
+          matrix:
+            arch:
+              - name: Win64
+                sys: mingw64
+                env: x86_64
+              - name: Win32
+                sys: mingw32
+                env: i686
+        
+        name: Windows ${{ matrix.arch.name }}
+        runs-on: windows-latest
+        defaults:
+            run:
+                shell: msys2 {0}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install dependencies
+              uses: msys2/setup-msys2@v2
+              with:
+                msystem: ${{ matrix.arch.sys }}
+                update: true
+                install: >
+                    make
+                    mingw-w64-${{ matrix.arch.env }}-gcc
+
+            - name: Build library
+              run: make mingw
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-${{ matrix.arch.name }}
+                path: ./liblua.a
+
+    build-macos:
+        strategy:
+          matrix:
+            arch:
+              - name: Intel
+                runner: latest
+              - name: ARM
+                runner: 13
+
+        name: macOS ${{ matrix.arch.name }}
+        runs-on: macos-${{ matrix.arch.runner }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Build library
+              run: |
+                make macosx
+            
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-macos-${{ matrix.arch.name }}
+                path: ./liblua.a
