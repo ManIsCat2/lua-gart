@@ -5,6 +5,60 @@ on:
     push:
 
 jobs:
+    build-android:
+        strategy:
+          matrix:
+            arch:
+              - name: x86_64
+                runner: ubuntu-24.04
+                image: termux/termux-docker:x86_64
+              - name: aarch64
+                runner: ubuntu-24.04-arm
+                image: termux/termux-docker:aarch64
+
+        name: Build on ${{ matrix.arch.name }}
+        runs-on: ${{ matrix.arch.runner }}
+        container:
+          image: ${{ matrix.arch.image }}
+          volumes:
+            - /tmp/node20:/__e/node20
+        env:
+          ANDROID_ROOT: /system
+          ANDROID_DATA: /data
+          PREFIX: /data/data/com.termux/files/usr
+          HOME: /data/data/com.termux/files/home
+          PATH: /data/data/com.termux/files/usr/bin
+          TMPDIR: /data/data/com.termux/files/usr/tmp
+          LANG: en_US.UTF-8
+          TZ: UTC
+
+        steps:
+            - name: Install dependencies
+              run: |
+                ln -sf ${PREFIX}/etc/termux/mirrors/default ${PREFIX}/etc/termux/chosen_mirrors
+                /entrypoint.sh bash -c "yes | pkg upgrade -y"
+                chmod -R o+x ${PREFIX}/bin
+                /entrypoint.sh pkg install -y nodejs-lts
+                ln -sf ${PREFIX}/bin /__e/node20/bin
+                /entrypoint.sh pkg install -y git wget make python clang binutils aapt which curl
+
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Reset permissions
+              run: chown -R 1000:1000 .
+
+            - name: Build library
+              run: |
+                cd lua
+                /entrypoint.sh make linux -j8
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-linux-${{ matrix.arch.name }}.a
+                path: lua/src/*.a
+
     build-linux:
         runs-on: ubuntu-22.04
         steps:
@@ -16,13 +70,13 @@ jobs:
                 sudo apt update
                 sudo apt install -y build-essential
 
-            - name: Build the game
+            - name: Build library
               run: make linux
             
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-linux
+                name: liblua53-linux.a
                 path: ./liblua.a
     
     build-windows:
@@ -44,13 +98,13 @@ jobs:
                     mingw-w64-i686-gcc
                     mingw-w64-x86_64-gcc
 
-            - name: Build the game
+            - name: Build library
               run: make mingw
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-win64
+                name: liblua53-win64.a
                 path: ./liblua.a
 
     build-macos-arm:
@@ -63,14 +117,14 @@ jobs:
             #   run: |
             #     brew install make mingw-w64 sdl2 pkg-config glew glfw3 coreutils
 
-            - name: Build the game
+            - name: Build library
               run: |
                 make macosx
             
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-macos-arm
+                name: liblua53-macos-arm.a
                 path: ./liblua.a
 
     build-macos-intel:
@@ -83,12 +137,12 @@ jobs:
             #   run: |
             #     brew install make mingw-w64 gcc@9 sdl2 pkg-config glew glfw3 coreutils
 
-            - name: Build the game
+            - name: Build library
               run: |
                 make macosx
             
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-macos-intel
+                name: liblua53-macos-intel.a
                 path: ./liblua.a
