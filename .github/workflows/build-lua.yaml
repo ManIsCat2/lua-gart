@@ -80,7 +80,7 @@ jobs:
             - name: Install dependencies
               run: |
                 sudo apt update
-                sudo apt install -y build-essential libreadline-dev gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
+                sudo apt install -y build-essential libreadline-dev libreadline-dev:armhf gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
 
             - name: Build library
               run: make linux CC=${{ matrix.arch.cc }}
