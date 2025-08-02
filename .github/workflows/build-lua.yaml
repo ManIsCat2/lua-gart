@@ -16,7 +16,7 @@ jobs:
                 runner: ubuntu-24.04-arm
                 image: termux/termux-docker:aarch64
 
-        name: Build on ${{ matrix.arch.name }}
+        name: Android ${{ matrix.arch.name }}
         runs-on: ${{ matrix.arch.runner }}
         container:
           image: ${{ matrix.arch.image }}
@@ -55,11 +55,21 @@ jobs:
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-linux-${{ matrix.arch.name }}.a
+                name: liblua53-android-${{ matrix.arch.name }}
                 path: ./liblua.a
 
     build-linux:
+        strategy:
+          matrix:
+            arch:
+              - name: x86_64
+                cc: "gcc -std=gnu99"
+              - name: arm
+                cc: arm-linux-gnueabihf-gcc
+              - name: arm64
+                cc: aarch64-linux-gnu-gcc
         runs-on: ubuntu-22.04
+        name: Linux ${{ matrix.arch }}
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -70,15 +80,24 @@ jobs:
                 sudo apt install -y build-essential
 
             - name: Build library
-              run: make linux
-            
+              run: make all CC=${{ matrix.arch.cc }}
+
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-linux.a
+                name: liblua53-linux-${{ matrix.arch.name }}
                 path: ./liblua.a
     
     build-windows:
+        strategy:
+          matrix:
+            arch:
+              - name: win64
+                cc: x86_64
+              - name: win32
+                cc: i686
+        
+        name: Windows ${{ matrix.arch.name }}
         runs-on: windows-latest
         defaults:
             run:
@@ -94,16 +113,15 @@ jobs:
                 update: true
                 install: >
                     make
-                    mingw-w64-i686-gcc
-                    mingw-w64-x86_64-gcc
+                    mingw-w64-${{ matrix.arch.cc }}-gcc
 
             - name: Build library
-              run: make mingw
+              run: make mingw CC=${{ matrix.arch.cc }}-w64-mingw32-gcc
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-win64.a
+                name: liblua53-${{ matrix.arch.name }}
                 path: ./liblua.a
 
     build-macos-arm:
@@ -123,7 +141,7 @@ jobs:
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-macos-arm.a
+                name: liblua53-macos-arm
                 path: ./liblua.a
 
     build-macos-intel:
@@ -143,5 +161,5 @@ jobs:
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-macos-intel.a
+                name: liblua53-macos-intel
                 path: ./liblua.a
