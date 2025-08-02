@@ -64,7 +64,7 @@ jobs:
             arch:
               - name: x86_64
                 runner: ubuntu-24.04
-                cc: "gcc -std=gnu99"
+                cc: "'gcc -std=gnu99'"
               - name: arm
                 runner: ubuntu-24.04-arm
                 cc: arm-linux-gnueabihf-gcc
@@ -80,10 +80,10 @@ jobs:
             - name: Install dependencies
               run: |
                 sudo apt update
-                sudo apt install -y build-essential gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
+                sudo apt install -y build-essential libreadline-dev gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
 
             - name: Build library
-              run: make all CC=${{ matrix.arch.cc }}
+              run: make linux CC=${{ matrix.arch.cc }}
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
