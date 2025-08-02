@@ -134,15 +134,19 @@ jobs:
                 name: liblua53-${{ matrix.arch.name }}
                 path: ./liblua.a
 
-    build-macos-arm:
-        runs-on: macos-latest
+    build-macos:
+        strategy:
+          matrix:
+            arch:
+              - name: intel
+                runner: latest
+              - name: arm
+                runner: 13
+
+        runs-on: macos-${{ matrix.arch.runner }}
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
-
-            # - name: Install dependencies
-            #   run: |
-            #     brew install make mingw-w64 sdl2 pkg-config glew glfw3 coreutils
 
             - name: Build library
               run: |
@@ -151,25 +155,5 @@ jobs:
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: liblua53-macos-arm
-                path: ./liblua.a
-
-    build-macos-intel:
-        runs-on: macos-13
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
-            # - name: Install dependencies
-            #   run: |
-            #     brew install make mingw-w64 gcc@9 sdl2 pkg-config glew glfw3 coreutils
-
-            - name: Build library
-              run: |
-                make macosx
-            
-            - name: Upload artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: liblua53-macos-intel
+                name: liblua53-macos-${{ matrix.arch.name }}
                 path: ./liblua.a
