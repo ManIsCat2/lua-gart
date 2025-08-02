@@ -63,10 +63,13 @@ jobs:
           matrix:
             arch:
               - name: x86_64
+                runner: ubuntu-24.04
                 cc: "gcc -std=gnu99"
               - name: arm
+                runner: ubuntu-24.04-arm
                 cc: arm-linux-gnueabihf-gcc
               - name: arm64
+                runner: ubuntu-24.04-arm
                 cc: aarch64-linux-gnu-gcc
         runs-on: ubuntu-22.04
         name: Linux ${{ matrix.arch }}
@@ -77,7 +80,7 @@ jobs:
             - name: Install dependencies
               run: |
                 sudo apt update
-                sudo apt install -y build-essential
+                sudo apt install -y build-essential gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
 
             - name: Build library
               run: make all CC=${{ matrix.arch.cc }}
@@ -93,9 +96,9 @@ jobs:
           matrix:
             arch:
               - name: win64
-                cc: x86_64
+                sys: mingw64
               - name: win32
-                cc: i686
+                sys: mingw32
         
         name: Windows ${{ matrix.arch.name }}
         runs-on: windows-latest
@@ -109,14 +112,13 @@ jobs:
             - name: Install dependencies
               uses: msys2/setup-msys2@v2
               with:
-                msystem: mingw64
+                msystem: ${{ matrix.arch.sys }}
                 update: true
                 install: >
                     make
-                    mingw-w64-${{ matrix.arch.cc }}-gcc
 
             - name: Build library
-              run: make mingw CC=${{ matrix.arch.cc }}-w64-mingw32-gcc
+              run: make mingw
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
