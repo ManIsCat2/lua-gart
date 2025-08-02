@@ -143,6 +143,7 @@ jobs:
               - name: arm
                 runner: 13
 
+        name: macOS ${{ matrix.arch.name }}
         runs-on: macos-${{ matrix.arch.runner }}
         steps:
             - name: Checkout repository
