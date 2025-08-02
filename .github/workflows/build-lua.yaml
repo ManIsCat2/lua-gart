@@ -81,7 +81,7 @@ jobs:
               run: |
                 sudo apt update
                 sudo apt install -y build-essential libreadline-dev gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu
-                if [ "${{ matrix.arch.name }}" == "arm" ]; then
+                if [ "${{ matrix.arch.name }}" == "ARM" ]; then
                     sudo dpkg --add-architecture armhf
                     sudo apt update
                     sudo apt install -y libreadline-dev:armhf
