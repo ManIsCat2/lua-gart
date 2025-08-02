@@ -9,10 +9,10 @@ jobs:
         strategy:
           matrix:
             arch:
-              - name: x86_64
+              - name: x86-64
                 runner: ubuntu-24.04
                 image: termux/termux-docker:x86_64
-              - name: aarch64
+              - name: AArch64
                 runner: ubuntu-24.04-arm
                 image: termux/termux-docker:aarch64
 
@@ -65,10 +65,10 @@ jobs:
               - name: x86_64
                 runner: ubuntu-24.04
                 cc: "'gcc -std=gnu99'"
-              - name: arm
+              - name: ARM
                 runner: ubuntu-24.04-arm
                 cc: arm-linux-gnueabihf-gcc
-              - name: arm64
+              - name: ARM64
                 runner: ubuntu-24.04-arm
                 cc: aarch64-linux-gnu-gcc
         runs-on: ${{ matrix.arch.runner }}
@@ -100,10 +100,10 @@ jobs:
         strategy:
           matrix:
             arch:
-              - name: win64
+              - name: Win64
                 sys: mingw64
                 env: x86_64
-              - name: win32
+              - name: Win32
                 sys: mingw32
                 env: i686
         
@@ -138,9 +138,9 @@ jobs:
         strategy:
           matrix:
             arch:
-              - name: intel
+              - name: Intel
                 runner: latest
-              - name: arm
+              - name: ARM
                 runner: 13
 
         name: macOS ${{ matrix.arch.name }}
