@@ -40,7 +40,7 @@ jobs:
                 chmod -R o+x ${PREFIX}/bin
                 /entrypoint.sh pkg install -y nodejs-lts
                 ln -sf ${PREFIX}/bin /__e/node20/bin
-                /entrypoint.sh pkg install -y git wget make python clang binutils aapt which curl
+                /entrypoint.sh pkg install -y make clang binutils
 
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -50,7 +50,6 @@ jobs:
 
             - name: Build library
               run: |
-                cd lua
                 /entrypoint.sh make linux -j8
 
             - name: Upload artifact
