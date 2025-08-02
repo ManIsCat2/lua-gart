@@ -1,0 +1,94 @@
+name: Build Lua
+
+on:
+    workflow_dispatch:
+    push:
+
+jobs:
+    build-linux:
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install dependencies
+              run: |
+                sudo apt update
+                sudo apt install -y build-essential
+
+            - name: Build the game
+              run: make linux
+            
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-linux
+                path: ./liblua.a
+    
+    build-windows:
+        runs-on: windows-latest
+        defaults:
+            run:
+                shell: msys2 {0}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install dependencies
+              uses: msys2/setup-msys2@v2
+              with:
+                msystem: mingw64
+                update: true
+                install: >
+                    make
+                    mingw-w64-i686-gcc
+                    mingw-w64-x86_64-gcc
+
+            - name: Build the game
+              run: make mingw
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-win64
+                path: ./liblua.a
+
+    build-macos-arm:
+        runs-on: macos-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            # - name: Install dependencies
+            #   run: |
+            #     brew install make mingw-w64 sdl2 pkg-config glew glfw3 coreutils
+
+            - name: Build the game
+              run: |
+                make macosx
+            
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-macos-arm
+                path: ./liblua.a
+
+    build-macos-intel:
+        runs-on: macos-13
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            # - name: Install dependencies
+            #   run: |
+            #     brew install make mingw-w64 gcc@9 sdl2 pkg-config glew glfw3 coreutils
+
+            - name: Build the game
+              run: |
+                make macosx
+            
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: liblua53-macos-intel
+                path: ./liblua.a
