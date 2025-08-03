@@ -1503,17 +1503,19 @@ static void exprstat (LexState *ls) {
 
       BinOpr opr = OPR_NOBINOPR;
       switch (token) {
-        case TK_ADDEQ:   opr = OPR_ADD; break;
-        case TK_SUBEQ:   opr = OPR_SUB; break;
-        case TK_MULEQ:   opr = OPR_MUL; break;
-        case TK_DIVEQ:   opr = OPR_DIV; break;
-        case TK_IDIVEQ:  opr = OPR_IDIV; break;
-        case TK_OREQ:    opr = OPR_BOR; break;
-        case TK_ANDEQ:   opr = OPR_BAND; break;
-        case TK_MODEQ:   opr = OPR_MOD; break;
-        case TK_SHLEQ:   opr = OPR_SHL; break;
-        case TK_SHREQ:   opr = OPR_SHR; break;
-        default:         opr = OPR_NOBINOPR; break;
+        case TK_ADDEQ:  opr = OPR_ADD;      break;
+        case TK_SUBEQ:  opr = OPR_SUB;      break;
+        case TK_MULEQ:  opr = OPR_MUL;      break;
+        case TK_MODEQ:  opr = OPR_MOD;      break;
+        case TK_POWEQ:  opr = OPR_POW;      break;
+        case TK_DIVEQ:  opr = OPR_DIV;      break;
+        case TK_IDIVEQ: opr = OPR_IDIV;     break;
+        case TK_ANDEQ:  opr = OPR_BAND;     break;
+        case TK_OREQ:   opr = OPR_BOR;      break;
+        case TK_XOREQ:  opr = OPR_BXOR;     break;
+        case TK_SHLEQ:  opr = OPR_SHL;      break;
+        case TK_SHREQ:  opr = OPR_SHR;      break;
+        default:        opr = OPR_NOBINOPR; break;
       }
 
       luaK_exp2anyreg(fs, &orig);
