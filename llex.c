@@ -45,8 +45,8 @@ static const char *const luaX_tokens [] = {
     "//", "..", "...", "==", ">=", "<=", "~=",
     "<<", ">>", "::", "<eof>",
     "<number>", "<integer>", "<name>", "<string>",
-    "+=", "-=", "*=", "/=", "//=", "|=",
-    "&=", "%=", "<<=", ">>="
+    "+=", "-=", "*=", "%=", "^=", "/=", "//=",
+    "&=", "|=", "!=", "<<=", ">>="
 };
 
 
@@ -440,11 +440,13 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         next(ls);
         break;
       }
-      case '&': luaX_symeq('&', TK_ANDEQ);
-      case '|': luaX_symeq('|', TK_OREQ);
       case '+': luaX_symeq('+', TK_ADDEQ);
       case '*': luaX_symeq('*', TK_MULEQ);
       case '%': luaX_symeq('%', TK_MODEQ);
+      case '^': luaX_symeq('^', TK_POWEQ);
+      case '&': luaX_symeq('&', TK_ANDEQ);
+      case '|': luaX_symeq('|', TK_OREQ);
+      case '!': luaX_symeq('!', TK_XOREQ);
       case '-': {  /* '-' or '--' (comment) */
         next(ls);
         if (ls->current == '=') {
