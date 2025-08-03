@@ -1105,7 +1105,7 @@ static void block (LexState *ls) {
 ** assignment
 */
 struct LHS_assign {
-  struct LHS_assign *prev;
+  struct LHS_assign *prev, *next;
   expdesc v;  /* variable (global, local, upvalue, or indexed) */
 };
 
@@ -1143,22 +1143,143 @@ static void check_conflict (LexState *ls, struct LHS_assign *lh, expdesc *v) {
   }
 }
 
+enum {
+  NORMAL_ASSIGNMENT,
+  COMPOUND_ASSIGNMENT
+};
 
-static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
+
+static int compound_assignment(LexState *ls, struct LHS_assign *lh, int nvars, BinOpr binopr) {
+  BinOpr op = getbinopr(ls->t.token);
+  if (binopr != OPR_NOBINOPR) op = binopr;
+  FuncState * fs=ls->fs;
+  int tolevel=fs->nactvar;
+  int old_free=fs->freereg;
+  expdesc e,infix;
+  double inc=0;
+  int nexps=0,i;
+  int line=ls->linenumber;
+  struct LHS_assign * assign=lh;
+  while(assign->prev) assign=assign->prev;
+  luaX_next(ls);
+
+  { /* create temporary local variables to lock up any registers needed 
+       by VINDEXED lvalues. */
+     lu_byte top=fs->nactvar;
+     struct LHS_assign * a = lh;
+     int nextra;
+     while(a) {
+       expdesc * v= &a->v;
+       /* protect both the table and index result registers,
+       ** ensuring that they won't be overwritten prior to the 
+       ** storevar calls. */
+       if(v->k==VINDEXED) {
+         if( !ISK( v->u.ind.t ) && v->u.ind.t  >= top) {
+           top= v->u.ind.t+1;
+         }
+         if( !ISK( v->u.ind.idx ) && v->u.ind.idx >= top) {
+           top= v->u.ind.idx+1;
+         }
+       }
+       a=a->prev;
+     }
+     nextra=top-fs->nactvar;
+     if(nextra) {
+       for(i=0;i<nextra;i++) {
+         new_localvarliteral(ls,"(temp)");
+       }
+       adjustlocalvars(ls,nextra);
+     }   
+  }
+  /*if(op==OPR_ADD && testnext(ls,'+')) {
+    /* the increment case.  supporting this is a bit silly, but
+    ** also fairly simple.
+    ** note that `a,b,c++` increments a,b, and c.
+    for(i=0;i<nvars;i++) {
+      init_exp(&e, VK, 0);
+      e.u.nval = 1;
+      infix=assign->v;
+      luaK_infix(fs,op,&infix);
+      luaK_posfix(fs, op, &infix, &e, line);
+      luaK_storevar(fs, &assign->v, &infix);
+      assign=assign->next;
+    }
+    goto done;
+  }*/
+  checknext(ls, '=');
+  do {
+    if(!assign) {
+      luaX_syntaxerror(ls,"too many right hand side values in compound assignment");
+    }
+    infix=assign->v;
+    luaK_infix(fs,op,&infix);
+    expr(ls, &e);
+    if(ls->t.token == ',') {
+      luaK_posfix(fs, op, &infix, &e, line);
+      luaK_storevar(fs, &assign->v, &infix);
+      assign=assign->next;
+      nexps++;
+    }
+  } while (testnext(ls, ','));
+
+  if(nexps+1==nvars ) {
+      luaK_posfix(fs, op, &infix, &e, line);
+      luaK_storevar(fs, &lh->v, &infix);
+  } else if( hasmultret(e.k) ) {
+    adjust_assign(ls, nvars-nexps, 1, &e);
+    assign=lh;
+    {
+      int top=ls->fs->freereg-1;
+      int first_top=top;
+      for(i=0;i<nvars-nexps;i++) {
+        infix=assign->v;
+        luaK_infix(fs,op,&infix);
+
+        init_exp(&e, VNONRELOC, top--); 
+        luaK_posfix(fs, op, &infix, &e, line);
+        luaK_storevar(fs, &assign->v, &infix);
+        assign=assign->prev;
+      }
+    }
+  } else {
+    luaX_syntaxerror(ls,"insufficient right hand variables in compound assignment.");
+  }
+
+  done:
+  removevars(fs,tolevel);
+  if(old_free<fs->freereg) {
+    fs->freereg=old_free;
+  }
+  return COMPOUND_ASSIGNMENT;
+}
+
+static int assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
   expdesc e;
+  int assignment_type = NORMAL_ASSIGNMENT;
   check_condition(ls, vkisvar(lh->v.k), "syntax error");
   if (testnext(ls, ',')) {  /* assignment -> ',' suffixedexp assignment */
     struct LHS_assign nv;
     nv.prev = lh;
+    nv.next = NULL;
+    lh->next = &nv;
     suffixedexp(ls, &nv.v);
     if (nv.v.k != VINDEXED)
       check_conflict(ls, lh, &nv.v);
     checklimit(ls->fs, nvars + ls->L->nCcalls, LUAI_MAXCCALLS,
                     "C levels");
-    assignment(ls, &nv, nvars+1);
+    assignment_type=assignment(ls, &nv, nvars+1);
   }
   else {  /* assignment -> '=' explist */
     int nexps;
+    switch(ls->t.token) {
+      /* hook for compound_assignment */
+      case TK_IDIV: return compound_assignment(ls, lh, nvars, OPR_IDIV);
+      case TK_SHL: return compound_assignment(ls, lh, nvars, OPR_SHL);
+      case TK_SHR: return compound_assignment(ls, lh, nvars, OPR_SHR);
+      case '+': case '-': case '*': case '%': case '|':
+      case '&': case '^': case '/':
+        return compound_assignment(ls,lh,nvars, OPR_NOBINOPR);
+    }
     checknext(ls, '=');
     nexps = explist(ls, &e);
     if (nexps != nvars)
@@ -1166,11 +1287,13 @@ static void assignment (LexState *ls, struct LHS_assign *lh, int nvars) {
     else {
       luaK_setoneret(ls->fs, &e);  /* close last expression */
       luaK_storevar(ls->fs, &lh->v, &e);
-      return;  /* avoid default */
+      return assignment_type;  /* avoid default */
     }
   }
+  if(assignment_type==COMPOUND_ASSIGNMENT) return assignment_type;
   init_exp(&e, VNONRELOC, ls->fs->freereg-1);  /* default assignment */
   luaK_storevar(ls->fs, &lh->v, &e);
+  return assignment_type;
 }
 
 
@@ -1490,47 +1613,12 @@ static void exprstat (LexState *ls) {
   FuncState *fs = ls->fs;
   struct LHS_assign v;
   suffixedexp(ls, &v.v);
-  if (ls->t.token == '=' || ls->t.token == ',' || (ls->t.token > TK_STRING && ls->t.token <= TK_SHREQ)) { /* stat -> assignment ? */
-    v.prev = NULL;
-    if (ls->t.token > TK_STRING) {
-      int token = ls->t.token;  // save before next
-      expdesc orig = v.v;
-      int line = ls->linenumber;
-
-      luaX_next(ls);  // consume token
-      expdesc rhs;
-      expr(ls, &rhs);
-
-      BinOpr opr = OPR_NOBINOPR;
-      switch (token) {
-        case TK_ADDEQ:  opr = OPR_ADD;      break;
-        case TK_SUBEQ:  opr = OPR_SUB;      break;
-        case TK_MULEQ:  opr = OPR_MUL;      break;
-        case TK_MODEQ:  opr = OPR_MOD;      break;
-        case TK_POWEQ:  opr = OPR_POW;      break;
-        case TK_DIVEQ:  opr = OPR_DIV;      break;
-        case TK_IDIVEQ: opr = OPR_IDIV;     break;
-        case TK_ANDEQ:  opr = OPR_BAND;     break;
-        case TK_OREQ:   opr = OPR_BOR;      break;
-        case TK_XOREQ:  opr = OPR_BXOR;     break;
-        case TK_SHLEQ:  opr = OPR_SHL;      break;
-        case TK_SHREQ:  opr = OPR_SHR;      break;
-        default:        opr = OPR_NOBINOPR; break;
-      }
-
-      luaK_exp2anyreg(fs, &orig);
-      luaK_infix(fs, opr, &orig);
-      luaK_posfix(fs, opr, &orig, &rhs, line);
-
-      luaK_storevar(fs, &v.v, &orig);  // store result
-    } else {
-      assignment(ls, &v, 1);
-    }
-  }
-  else {  /* stat -> func */
-    check_condition(ls, v.v.k == VCALL, "syntax error");
+  if (v.v.k == VCALL) {
     SETARG_C(getinstruction(fs, &v.v), 1);  /* call statement uses no results */
-  }
+  } else { /* stat -> assignment ? */
+    v.prev = v.next = NULL;
+    assignment(ls, &v, 1);
+   }
 }
 
 
@@ -1680,4 +1768,3 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   L->top--;  /* remove scanner's table */
   return cl;  /* closure is on the stack, too */
 }
-

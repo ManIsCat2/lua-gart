@@ -44,9 +44,7 @@ static const char *const luaX_tokens [] = {
     "return", "then", "true", "until", "while",
     "//", "..", "...", "==", ">=", "<=", "~=",
     "<<", ">>", "::", "<eof>",
-    "<number>", "<integer>", "<name>", "<string>",
-    "+=", "-=", "*=", "%=", "^=", "/=", "//=",
-    "&=", "|=", "!=", "<<=", ">>="
+    "<number>", "<integer>", "<name>", "<string>"
 };
 
 
@@ -440,19 +438,8 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         next(ls);
         break;
       }
-      case '+': luaX_symeq('+', TK_ADDEQ);
-      case '*': luaX_symeq('*', TK_MULEQ);
-      case '%': luaX_symeq('%', TK_MODEQ);
-      case '^': luaX_symeq('^', TK_POWEQ);
-      case '&': luaX_symeq('&', TK_ANDEQ);
-      case '|': luaX_symeq('|', TK_OREQ);
-      case '!': luaX_symeq('!', TK_XOREQ);
       case '-': {  /* '-' or '--' (comment) */
         next(ls);
-        if (ls->current == '=') {
-          next(ls);
-          return TK_SUBEQ;
-        }
         if (ls->current != '-') return '-';
         /* else is a comment */
         next(ls);
@@ -487,50 +474,20 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       case '<': {
         next(ls);
-        if (ls->current == '=') {
-          next(ls);
-          return TK_LE;
-        } else if (ls->current == '<') {
-          next(ls);
-          if (ls->current == '=') {
-            next(ls);
-            return TK_SHLEQ;
-          }
-          return TK_SHL;
-        }
-        return '<';
+        if (check_next1(ls, '=')) return TK_LE;
+        else if (check_next1(ls, '<')) return TK_SHL;
+        else return '<';
       }
-
       case '>': {
         next(ls);
-        if (ls->current == '=') {
-          next(ls);
-          return TK_GE;
-        } else if (ls->current == '>') {
-          next(ls);
-          if (ls->current == '=') {
-            next(ls);
-            return TK_SHREQ;
-          }
-          return TK_SHR;
-        }
-        return '>';
+        if (check_next1(ls, '=')) return TK_GE;
+        else if (check_next1(ls, '>')) return TK_SHR;
+        else return '>';
       }
       case '/': {
         next(ls);
-        if (ls->current == '/') {
-          next(ls);
-          if (ls->current == '=') {
-            next(ls);
-            return TK_IDIVEQ;
-          }
-          return TK_IDIV;
-        }
-        else if (ls->current == '=') {
-          next(ls);
-          return TK_DIVEQ;
-        }
-        return '/';
+        if (check_next1(ls, '/')) return TK_IDIV;
+        else return '/';
       }
       case '~': {
         next(ls);
@@ -605,4 +562,3 @@ int luaX_lookahead (LexState *ls) {
   ls->lookahead.token = llex(ls, &ls->lookahead.seminfo);
   return ls->lookahead.token;
 }
-
