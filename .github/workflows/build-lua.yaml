@@ -90,13 +90,7 @@ jobs:
             - name: Build library
               run: make linux CC=${{ matrix.arch.cc }}
 
-            - name: Upload Executable
-              uses: actions/upload-artifact@v4
-              with:
-                name: lua-linux-${{ matrix.arch.name }}
-                path: ./lua
-
-            - name: Upload Library
+            - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
                 name: liblua53-linux-${{ matrix.arch.name }}
