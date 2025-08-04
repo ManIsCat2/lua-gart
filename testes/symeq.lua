@@ -1,18 +1,32 @@
-local tableSymeq = {x=0, t2 = {x=43}}
+local AddEq = 50
+AddEq += 14
 
+print("TEST AddEq (64)", AddEq)
+
+local SubEq = 16
+SubEq -= 14
+
+print("TEST SubEq (2)", SubEq)
+
+local IdivEq = 6
+IdivEq //= 2
+
+print("TEST IdivEq (3)", IdivEq)
+
+local tableSymeq = {x=0, t2 = {x=43}}
 tableSymeq.x += 5
-print("TEST 5: ",tableSymeq.x)
+print("TEST TABLE AddEq (5): ",tableSymeq.x)
 tableSymeq.t2.x += 5
-print("TEST 48:", tableSymeq.t2.x)
+print("TEST DOUBLETABLE AddEq (48):", tableSymeq.t2.x)
 
 
 local function n()
     return 1, 2
 end
 
-local temp1, temp2 =5,0
+local n1, n2 =5,0
 
-temp1,temp2 += n()
+n1,n2 += n()
 
-print("TEMP1 (6): ", temp1)
-print("TEMP2 (2): ", temp2)
+print("TEST FUNCRT1 (6): ", n1)
+print("TEST FUNCRT2 (2): ", n2)
