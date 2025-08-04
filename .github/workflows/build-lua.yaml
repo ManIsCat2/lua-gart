@@ -90,6 +90,9 @@ jobs:
             - name: Build library
               run: make linux CC=${{ matrix.arch.cc }}
 
+            - name: Test custom Lua
+              run: ./lua ./testes/symeq.lua
+
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
@@ -128,6 +131,9 @@ jobs:
             - name: Build library
               run: make mingw
 
+            - name: Test custom Lua
+              run: ./lua.exe ./testes/symeq.lua
+
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
@@ -152,6 +158,9 @@ jobs:
             - name: Build library
               run: |
                 make macosx
+            
+            - name: Test custom Lua
+              run: ./lua ./testes/symeq.lua
             
             - name: Upload artifact
               uses: actions/upload-artifact@v4

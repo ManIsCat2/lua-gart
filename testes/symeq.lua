@@ -1,9 +1,9 @@
 local tableSymeq = {x=0, t2 = {x=43}}
 
 tableSymeq.x += 5
-print(tableSymeq.x)
+print("TEST 5: ",tableSymeq.x)
 tableSymeq.t2.x += 5
-print(tableSymeq.t2.x)
+print("TEST 48:", tableSymeq.t2.x)
 
 
 local function n()
@@ -14,5 +14,5 @@ local temp1, temp2 =5,0
 
 temp1,temp2 += n()
 
-print("TEMP1", temp1)
-print("TEMP2", temp2)
+print("TEMP1 (6): ", temp1)
+print("TEMP2 (2): ", temp2)
