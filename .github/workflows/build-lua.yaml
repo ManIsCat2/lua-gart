@@ -157,9 +157,9 @@ jobs:
           matrix:
             arch:
               - name: Intel
-                runner: latest
-              - name: ARM
                 runner: 13
+              - name: ARM
+                runner: latest
 
         name: macOS ${{ matrix.arch.name }}
         runs-on: macos-${{ matrix.arch.runner }}
